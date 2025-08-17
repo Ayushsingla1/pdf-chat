@@ -4,27 +4,33 @@ import { compare, hash } from "bcrypt"
 import db from "./dbClient.js";
 import jwt from "jsonwebtoken";
 import { configDotenv } from "dotenv";
-import { createConversation, queryFunc } from "./generalised.js";
-
-
+import { addDocuments, createConversation, queryFunc } from "./generalised.js";
+import multer from "multer";
 configDotenv();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 }})
 
 const verify = async(req : Request,res : Response,next : NextFunction) => {
 
     const authHeader = req.headers["authorization"];
+
+    console.log(authHeader);
+
     const token = authHeader?.split(" ")[1] || " ";
+
+    console.log(token);
 
     jwt.verify(token,process.env.HASH_SECRET!,(err,decoded) => {
         if(err){
             return res.status(402).json({msg : "login again "});
         }
         else {
+            console.log("verified");
             //@ts-ignore
-            req.body.userId = decoded.userId;
+            req.userId = decoded.userId;
             next();
         }
     })
@@ -96,10 +102,25 @@ app.post('/new',verify, async(req : Request, res : Response) => {
     else return res.status(402).json({msg : "unable to create"});
 })
 
+app.post('/upload',verify,upload.single('file'),async(req : Request, res : Response) => {
+
+    if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const buffer = req.file?.buffer;
+    // @ts-ignore
+    const response = await addDocuments(new Blob([buffer!]),req.userId);
+    console.log(response);
+
+    return res.status(200).json({response});
+})
+
 app.post('/query',verify,async(req : Request, res : Response) => {
 
-    const { query, userId, docId } = req.body;
-    const result = await queryFunc(query,userId,docId);
+    const { query, docId } = req.body;
+    //@ts-ignore
+    const result = await queryFunc(query,req.userId,docId);
 
     return res.status(200).json({
         msg : result.msg

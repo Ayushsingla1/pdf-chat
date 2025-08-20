@@ -36,6 +36,10 @@ const verify = async(req : Request,res : Response,next : NextFunction) => {
     })
 }
 
+app.post('/verify',verify,async(req : Request, res : Response) => {
+    return res.status(200).json({});
+})
+
 app.post('/signup', async (req : Request, res : Response) => {
 
     try {

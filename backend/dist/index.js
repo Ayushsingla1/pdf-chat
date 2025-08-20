@@ -28,6 +28,9 @@ const verify = async (req, res, next) => {
         }
     });
 };
+app.post('/verify', verify, async (req, res) => {
+    return res.status(200).json({});
+});
 app.post('/signup', async (req, res) => {
     try {
         const { email, name, password } = req.body;

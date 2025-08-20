@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Upload, Send, FileText, MessageCircle, Loader2, Bot, User } from 'lucide-react';
+import axios from 'axios';
+import { useNavigate } from 'react-router';
 
 function Home() {
   const [file, setFile] = useState(null);
@@ -13,11 +15,35 @@ function Home() {
   const [streamingMsg, setStreamingMsg] = useState("");
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const [validating,setValidationg] = useState(false);
+  const navigate = useNavigate();
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMsg]);
+
+  useEffect(() => {
+
+    setValidationg(true);
+    const fxn = async() => {
+        const token = localStorage.getItem("token");
+        if(!token) return navigate('/auth');
+        const response = await axios.post('http://localhost:3000/verify',{},{
+            headers : {
+                Authorization : `Bearer ${token}`
+            }
+        })
+
+        if(response.status === 200){
+            setValidationg(false);
+        }
+        else{
+            setValidationg(false);
+            return navigate('/auth');
+        }
+    }
+    fxn();
+  },[]);
 
   const changeHandler = (event) => {
     const selectedFile = event.target.files?.[0];
@@ -182,6 +208,10 @@ function Home() {
       fileInputRef.current.value = '';
     }
   };
+
+  if(validating){
+    return <div className='flex w-screen h-screen text-white justify-center items-center'>Loading...</div>
+  }
 
   if (showChat) {
     return (

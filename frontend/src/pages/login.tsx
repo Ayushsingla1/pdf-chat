@@ -75,7 +75,6 @@ const Login = () => {
         
         setIsLoading(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
             const response = await fetch('http://localhost:3000/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -96,7 +95,6 @@ const Login = () => {
             }
             
             console.log('Login successful');
-            localStorage.setItem("token", "demo-token-123");
             alert('Login successful! Redirecting...');
         } catch (error) {
             console.error('Login failed:', error);

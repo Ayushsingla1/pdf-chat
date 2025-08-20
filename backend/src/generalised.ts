@@ -4,6 +4,7 @@ import { model, splitter } from "./base.js"
 import { faissStore } from "./base.js";
 import { v6 } from "uuid"
 import { AIMessage } from "@langchain/core/messages";
+import { Response } from "express";
 
 export const addDocuments = async(file : any, userId : string) => {
     const loader = new PDFLoader(file,{
@@ -34,7 +35,7 @@ export const addDocuments = async(file : any, userId : string) => {
     return {summary : (summary as AIMessage).content, docId : docId};
 }
 
-export const queryFunc = async(query : string, userId : string, conversationId : string) => {
+export const queryFunc = async(query : string, userId : string, conversationId : string, res: Response) => {
 
     const summaryDetails = await db.conversation.findFirst({
         where : {
@@ -65,12 +66,24 @@ export const queryFunc = async(query : string, userId : string, conversationId :
                     Now answer the user's current query: ${query}
                     `;
 
-    const result = await model.invoke(prompt);
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
-    const res = await db.chats.createMany({
+    const result = await model.stream(prompt)
+    const chunks = [];
+    
+    for await (const chunk of result) {
+        res.write(`data : ${chunk.content}\n\n`);
+        chunks.push(chunk);
+    }
+    res.write(`data : [DONE]\n\n`);
+    res.end();
+
+    const response = await db.chats.createMany({
         data : [
             {role : "HUMAN", message : query, conversationId : conversationId},
-            {role : "AI", message : String((result as AIMessage).content), conversationId : conversationId}
+            {role : "AI", message : String(chunks.join(' ')), conversationId : conversationId}
         ]
     })
 
@@ -93,7 +106,7 @@ export const queryFunc = async(query : string, userId : string, conversationId :
             }
         })
     }
-    return {msg : (result as AIMessage).content};
+    // return {msg : (result as AIMessage).content};
 }
 
 

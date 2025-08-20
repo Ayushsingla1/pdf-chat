@@ -1,12 +1,15 @@
-import './App.css'
+import { Routes, Route } from "react-router";
+import Home from "./pages/home";
+import Login from "./pages/login";
 
-function App() {
 
-  return (
-    <div className='bg-black flex w-screen h-screen justify-center items-center text-white'>
-      pdf summarize + talk
-    </div>
-  )
+const App = () => {
+  return <Routes>
+    <Route path="/">
+    <Route index element={<Home/>}></Route>
+    <Route path="/auth" element = {<Login/>}></Route>
+    </Route>
+  </Routes>
 }
 
-export default App
+export default App;
